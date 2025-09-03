@@ -223,7 +223,7 @@ class SplitTab(_BaseTab):
         split_btn.grid(row=0, column=0, padx=4)
         clear_btn.grid(row=0, column=1, padx=4)
         self._setup_responsive_buttons(btn_frame, split_btn, clear_btn)
-
+        self.grid_rowconfigure(self.grid_size()[1], weight=1)
         self.columnconfigure(1, weight=0)
 
     # Widget callbacks ------------------------------------------------
@@ -292,8 +292,7 @@ class SplitChosenTab(_BaseTab):
         split_btn.grid(row=0, column=0, padx=4)
         clear_btn.grid(row=0, column=1, padx=4)
         self._setup_responsive_buttons(btn_frame, split_btn, clear_btn)
-
-        self.columnconfigure(1, weight=0)
+        self.grid_rowconfigure(self.grid_size()[1], weight=1)
 
     # Callbacks -------------------------------------------------------
     def _browse_input(self) -> None:
@@ -363,7 +362,7 @@ class MergeTab(_BaseTab):
         merge_btn.grid(row=0, column=0, padx=4)
         clear_btn.grid(row=0, column=1, padx=4)
         self._setup_responsive_buttons(btn_frame, merge_btn, clear_btn)
-
+        self.grid_rowconfigure(self.grid_size()[1], weight=1)
         self.columnconfigure(1, weight=0)
 
     def _browse_input(self) -> None:
