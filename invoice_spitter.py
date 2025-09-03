@@ -52,6 +52,7 @@ def browse_input():
 
 def browse_output():
     if mode() == "split":
+
         dir_ = filedialog.askdirectory(title="Select output folder")
         if dir_:
             output_var.set(dir_)
@@ -232,6 +233,14 @@ mode_var = StringVar(value="Split")
 input_var = StringVar(value="")
 output_var = StringVar(value="")
 status_var = StringVar(value="")
+
+# Menu to switch modes
+menubar = Menu(root)
+mode_menu = Menu(menubar, tearoff=0)
+mode_menu.add_command(label="Split PDF", command=lambda: set_mode("split"))
+mode_menu.add_command(label="Merge PDFs", command=lambda: set_mode("merge"))
+menubar.add_cascade(label="Mode", menu=mode_menu)
+root.config(menu=menubar)
 
 row = 0
 ttk.Label(root, text="Mode:").grid(row=row, column=0, sticky="w", padx=8, pady=6)
