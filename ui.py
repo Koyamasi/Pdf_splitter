@@ -108,22 +108,28 @@ class RoundedEntry(ttk.Frame):
         radius: int = 10,
     ) -> None:
         super().__init__(master)
+        self.radius = radius
         self.canvas = Canvas(self, highlightthickness=0, bd=0, bg=GITHUB_BG)
         self.canvas.pack(fill="both", expand=True)
         font = tkfont.Font()
         char_width = font.measure("0")
         w = char_width * width + 20
         h = font.metrics("linespace") + 10
-        self.canvas.configure(width=w, height=h)
         _create_round_rect(self.canvas, 0, 0, w, h, radius, fill=GITHUB_SURFACE, outline="")
         self.entry = ttk.Entry(
             self,
             textvariable=textvariable,
-            width=width,
             style="Rounded.TEntry",
         )
         self.entry.place(x=10, y=5, width=w - 20, height=h - 10)
         self.configure(width=w, height=h)
+        self.canvas.bind("<Configure>", self._resize)
+
+    def _resize(self, event) -> None:
+        w, h = event.width, event.height
+        self.canvas.delete("all")
+        _create_round_rect(self.canvas, 0, 0, w, h, self.radius, fill=GITHUB_SURFACE, outline="")
+        self.entry.place(x=10, y=5, width=w - 20, height=h - 10)
 
     # Proxy common methods to the underlying entry
     def get(self) -> str:
@@ -420,13 +426,10 @@ class PdfApp(Tk):
         )
 
         self.status_var = StringVar()
-        self.progress = ttk.Progressbar(
-            self, orient="horizontal", mode="determinate", length=440
-        )
+        self.progress = ttk.Progressbar(self, orient="horizontal", mode="determinate")
         self.progress.grid(row=2, column=0, columnspan=3, pady=(8, 2), sticky="we")
-        ttk.Label(self, textvariable=self.status_var, wraplength=500).grid(
-            row=3, column=0, columnspan=3, sticky="w"
-        )
+        self.status_label = ttk.Label(self, textvariable=self.status_var)
+        self.status_label.grid(row=3, column=0, columnspan=3, sticky="we")
 
         # Set up backend objects with callbacks
         splitter = PdfSplitter(self._update_status, self._update_progress)
@@ -440,6 +443,7 @@ class PdfApp(Tk):
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
+        self.bind("<Configure>", self._on_resize)
 
     # Backend callbacks -----------------------------------------------
     def _update_status(self, msg: str) -> None:
@@ -450,6 +454,12 @@ class PdfApp(Tk):
         self.progress["maximum"] = total
         self.progress["value"] = current
         self.update_idletasks()
+
+    def _on_resize(self, event) -> None:
+        width = event.width - 20
+        if width > 0:
+            self.progress.configure(length=width)
+            self.status_label.configure(wraplength=width)
 
 
 def main() -> None:
