@@ -1,6 +1,6 @@
 import os
 import traceback
-from tkinter import Tk, StringVar, filedialog, messagebox
+from tkinter import Tk, Menu, StringVar, filedialog, messagebox
 from tkinter import ttk
 
 # External dependency: pypdf
