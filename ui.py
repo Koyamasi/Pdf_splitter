@@ -106,15 +106,17 @@ class RoundedEntry(ttk.Frame):
         textvariable: StringVar | None = None,
         width: int = 60,
         radius: int = 10,
+        height: int = 100,
     ) -> None:
         super().__init__(master)
         self.radius = radius
+        self.height = height
         self.canvas = Canvas(self, highlightthickness=0, bd=0, bg=GITHUB_BG)
         self.canvas.pack(fill="both", expand=True)
         font = tkfont.Font()
         char_width = font.measure("0")
         w = char_width * width + 20
-        h = font.metrics("linespace") + 6
+        h = height
         _create_round_rect(self.canvas, 0, 0, w, h, radius, fill=GITHUB_SURFACE, outline="")
         self.entry = ttk.Entry(
             self,
@@ -126,9 +128,13 @@ class RoundedEntry(ttk.Frame):
         self.canvas.bind("<Configure>", self._resize)
 
     def _resize(self, event) -> None:
-        w, h = event.width, event.height
+        w = event.width
+        h = self.height
         self.canvas.delete("all")
-        _create_round_rect(self.canvas, 0, 0, w, h, self.radius, fill=GITHUB_SURFACE, outline="")
+        self.canvas.configure(width=w, height=h)
+        _create_round_rect(
+            self.canvas, 0, 0, w, h, self.radius, fill=GITHUB_SURFACE, outline=""
+        )
         self.entry.place(x=10, y=3, width=w - 20, height=h - 6)
 
     # Proxy common methods to the underlying entry
