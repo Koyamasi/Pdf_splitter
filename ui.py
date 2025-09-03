@@ -135,14 +135,6 @@ class RoundedEntry(ttk.Frame):
     def delete(self, first, last=None) -> None:
         self.entry.delete(first, last)
 
-GITHUB_BG = "#1f2328"
-GITHUB_HEADER_BG = "#161b22"
-GITHUB_SURFACE = "#2d333b"
-GITHUB_TAB_ACTIVE = "#39424a"
-GITHUB_PRIMARY = "#2f81f7"
-GITHUB_FG = "#f0f6fc"
-
-
 class _BaseTab(ttk.Frame):
     """Common functionality shared by the individual notebook tabs."""
 
