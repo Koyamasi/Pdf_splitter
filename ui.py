@@ -104,7 +104,7 @@ class RoundedEntry(ttk.Frame):
         master,
         *,
         textvariable: StringVar | None = None,
-        width: int = 45,
+        width: int = 30,
         radius: int = 10,
     ) -> None:
         super().__init__(master)
@@ -191,7 +191,7 @@ class SplitTab(_BaseTab):
     # GUI construction ------------------------------------------------
     def _build_widgets(self) -> None:
         ttk.Label(self, text="Input PDF:").grid(row=0, column=0, sticky="w")
-        RoundedEntry(self, textvariable=self.input_var, width=45).grid(
+        RoundedEntry(self, textvariable=self.input_var, width=30).grid(
             row=0, column=1, padx=5, pady=2, sticky="we"
         )
         RoundedButton(self, text="Browse…", command=self._browse_input).grid(
@@ -199,7 +199,7 @@ class SplitTab(_BaseTab):
         )
 
         ttk.Label(self, text="Output folder:").grid(row=1, column=0, sticky="w")
-        RoundedEntry(self, textvariable=self.output_var, width=45).grid(
+        RoundedEntry(self, textvariable=self.output_var, width=30).grid(
             row=1, column=1, padx=5, pady=2, sticky="we"
         )
         RoundedButton(self, text="Choose…", command=self._browse_output).grid(
@@ -224,7 +224,7 @@ class SplitTab(_BaseTab):
         clear_btn.grid(row=0, column=1, padx=4)
         self._setup_responsive_buttons(btn_frame, split_btn, clear_btn)
 
-        self.columnconfigure(1, weight=1)
+        self.columnconfigure(1, weight=0)
 
     # Widget callbacks ------------------------------------------------
     def _browse_input(self) -> None:
@@ -257,7 +257,7 @@ class SplitChosenTab(_BaseTab):
 
     def _build_widgets(self) -> None:
         ttk.Label(self, text="Input PDF:").grid(row=0, column=0, sticky="w")
-        RoundedEntry(self, textvariable=self.input_var, width=45).grid(
+        RoundedEntry(self, textvariable=self.input_var, width=30).grid(
             row=0, column=1, padx=5, pady=2, sticky="we"
         )
         RoundedButton(self, text="Browse…", command=self._browse_input).grid(
@@ -265,7 +265,7 @@ class SplitChosenTab(_BaseTab):
         )
 
         ttk.Label(self, text="Output folder:").grid(row=1, column=0, sticky="w")
-        RoundedEntry(self, textvariable=self.output_var, width=45).grid(
+        RoundedEntry(self, textvariable=self.output_var, width=30).grid(
             row=1, column=1, padx=5, pady=2, sticky="we"
         )
         RoundedButton(self, text="Choose…", command=self._browse_output).grid(
@@ -273,7 +273,7 @@ class SplitChosenTab(_BaseTab):
         )
 
         ttk.Label(self, text="Page selections:").grid(row=2, column=0, sticky="w")
-        RoundedEntry(self, textvariable=self.pages_var, width=45).grid(
+        RoundedEntry(self, textvariable=self.pages_var, width=30).grid(
             row=2, column=1, padx=5, pady=2, sticky="we"
         )
 
@@ -293,7 +293,7 @@ class SplitChosenTab(_BaseTab):
         clear_btn.grid(row=0, column=1, padx=4)
         self._setup_responsive_buttons(btn_frame, split_btn, clear_btn)
 
-        self.columnconfigure(1, weight=1)
+        self.columnconfigure(1, weight=0)
 
     # Callbacks -------------------------------------------------------
     def _browse_input(self) -> None:
@@ -333,7 +333,7 @@ class MergeTab(_BaseTab):
 
     def _build_widgets(self) -> None:
         ttk.Label(self, text="PDFs to merge:").grid(row=0, column=0, sticky="w")
-        RoundedEntry(self, textvariable=self.input_var, width=45).grid(
+        RoundedEntry(self, textvariable=self.input_var, width=30).grid(
             row=0, column=1, padx=5, pady=2, sticky="we"
         )
         RoundedButton(self, text="Browse…", command=self._browse_input).grid(
@@ -341,7 +341,7 @@ class MergeTab(_BaseTab):
         )
 
         ttk.Label(self, text="Output PDF:").grid(row=1, column=0, sticky="w")
-        RoundedEntry(self, textvariable=self.output_var, width=45).grid(
+        RoundedEntry(self, textvariable=self.output_var, width=30).grid(
             row=1, column=1, padx=5, pady=2, sticky="we"
         )
         RoundedButton(self, text="Save As…", command=self._browse_output).grid(
@@ -364,7 +364,7 @@ class MergeTab(_BaseTab):
         clear_btn.grid(row=0, column=1, padx=4)
         self._setup_responsive_buttons(btn_frame, merge_btn, clear_btn)
 
-        self.columnconfigure(1, weight=1)
+        self.columnconfigure(1, weight=0)
 
     def _browse_input(self) -> None:
         paths = filedialog.askopenfilenames(
