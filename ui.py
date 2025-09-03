@@ -35,10 +35,13 @@ from merger import PdfMerger
 
 APP_TITLE = "PDF Toolkit"
 
-# GitHub Desktop inspired color scheme
-GITHUB_BG = "#f6f8fa"
-GITHUB_HEADER_BG = "#24292e"
+
+GITHUB_BG = "#1f2328"
+GITHUB_HEADER_BG = "#161b22"
+GITHUB_SURFACE = "#2d333b"
+GITHUB_TAB_ACTIVE = "#39424a"
 GITHUB_PRIMARY = "#2f81f7"
+GITHUB_FG = "#f0f6fc"
 
 
 class _BaseTab(ttk.Frame):
@@ -269,14 +272,31 @@ class PdfApp(Tk):
 
         # Base widget styling
         style.configure("TFrame", background=GITHUB_BG)
-        style.configure("TLabel", background=GITHUB_BG)
-        style.configure("TNotebook", background=GITHUB_BG)
-        style.configure("TNotebook.Tab", padding=(12, 8))
+        style.configure("TLabel", background=GITHUB_BG, foreground=GITHUB_FG)
+        style.configure(
+            "TButton", background=GITHUB_SURFACE, foreground=GITHUB_FG, padding=6
+        )
+        style.map(
+            "TButton", background=[("active", "#444c56")]
+        )
         style.configure(
             "Primary.TButton", background=GITHUB_PRIMARY, foreground="white", padding=6
         )
         style.map(
             "Primary.TButton", background=[("active", "#1b6ac9")]
+        )
+        style.configure("TEntry", fieldbackground=GITHUB_SURFACE, foreground=GITHUB_FG, insertcolor=GITHUB_FG)
+        style.configure("TNotebook", background=GITHUB_BG)
+        style.configure(
+            "TNotebook.Tab",
+            padding=(12, 8),
+            background=GITHUB_SURFACE,
+            foreground=GITHUB_FG,
+        )
+        style.map(
+            "TNotebook.Tab",
+            background=[("selected", GITHUB_TAB_ACTIVE)],
+            padding=[("selected", (12, 8)), ("!selected", (12, 8))],
         )
         style.configure("Header.TFrame", background=GITHUB_HEADER_BG)
         style.configure(
@@ -284,6 +304,11 @@ class PdfApp(Tk):
             background=GITHUB_HEADER_BG,
             foreground="white",
             font=("Segoe UI", 12, "bold"),
+        )
+        style.configure(
+            "TProgressbar",
+            background=GITHUB_PRIMARY,
+            troughcolor=GITHUB_SURFACE,
         )
 
         # Header bar
