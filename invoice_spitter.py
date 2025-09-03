@@ -1,7 +1,6 @@
 import os
-import sys
 import traceback
-from tkinter import Tk, Label, Button, Entry, StringVar, filedialog, messagebox, Menu
+from tkinter import Tk, StringVar, filedialog, messagebox
 from tkinter import ttk
 
 # External dependency: pypdf
@@ -22,13 +21,13 @@ def human_error(msg: str, details: str = ""):
     messagebox.showerror("Error", msg)
 
 
-def set_mode(mode: str):
-    mode_var.set(mode)
-    update_ui()
+def mode() -> str:
+    """Return the current mode in lowercase."""
+    return mode_var.get().lower()
 
 
 def browse_input():
-    if mode_var.get() == "split":
+    if mode() == "split":
         path = filedialog.askopenfilename(
             title="Select a PDF",
             filetypes=[("PDF files", "*.pdf")],
@@ -52,7 +51,8 @@ def browse_input():
 
 
 def browse_output():
-    if mode_var.get() == "split":
+    if mode() == "split":
+
         dir_ = filedialog.askdirectory(title="Select output folder")
         if dir_:
             output_var.set(dir_)
@@ -199,14 +199,14 @@ def clear_fields():
 
 
 def perform_action():
-    if mode_var.get() == "split":
+    if mode() == "split":
         split_pdf()
     else:
         merge_pdfs()
 
 
 def update_ui():
-    if mode_var.get() == "split":
+    if mode() == "split":
         input_label.config(text="Input PDF:")
         output_label.config(text="Output folder:")
         output_browse_btn.config(text="Choose...")
@@ -222,9 +222,14 @@ def update_ui():
 # ---------------- GUI ----------------
 root = Tk()
 root.title(APP_TITLE)
-root.minsize(520, 220)
+root.minsize(540, 240)
+root.configure(padx=10, pady=10)
 
-mode_var = StringVar(value="split")
+style = ttk.Style(root)
+if "clam" in style.theme_names():
+    style.theme_use("clam")
+
+mode_var = StringVar(value="Split")
 input_var = StringVar(value="")
 output_var = StringVar(value="")
 status_var = StringVar(value="")
@@ -238,16 +243,22 @@ menubar.add_cascade(label="Mode", menu=mode_menu)
 root.config(menu=menubar)
 
 row = 0
-input_label = Label(root, text="Input PDF:")
-input_label.grid(row=row, column=0, sticky="w", padx=8, pady=6)
-Entry(root, textvariable=input_var, width=55).grid(row=row, column=1, padx=6, pady=6)
-Button(root, text="Browse...", command=browse_input).grid(row=row, column=2, padx=6, pady=6)
+ttk.Label(root, text="Mode:").grid(row=row, column=0, sticky="w", padx=8, pady=6)
+mode_combo = ttk.Combobox(root, textvariable=mode_var, values=["Split", "Merge"], state="readonly", width=10)
+mode_combo.grid(row=row, column=1, sticky="w", padx=6, pady=6)
+mode_combo.bind("<<ComboboxSelected>>", lambda e: update_ui())
 
 row += 1
-output_label = Label(root, text="Output folder:")
+input_label = ttk.Label(root, text="Input PDF:")
+input_label.grid(row=row, column=0, sticky="w", padx=8, pady=6)
+ttk.Entry(root, textvariable=input_var, width=55).grid(row=row, column=1, padx=6, pady=6)
+ttk.Button(root, text="Browse...", command=browse_input).grid(row=row, column=2, padx=6, pady=6)
+
+row += 1
+output_label = ttk.Label(root, text="Output folder:")
 output_label.grid(row=row, column=0, sticky="w", padx=8, pady=6)
-Entry(root, textvariable=output_var, width=55).grid(row=row, column=1, padx=6, pady=6)
-output_browse_btn = Button(root, text="Choose...", command=browse_output)
+ttk.Entry(root, textvariable=output_var, width=55).grid(row=row, column=1, padx=6, pady=6)
+output_browse_btn = ttk.Button(root, text="Choose...", command=browse_output)
 output_browse_btn.grid(row=row, column=2, padx=6, pady=6)
 
 row += 1
@@ -255,15 +266,15 @@ progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate", le
 progress_bar.grid(row=row, column=0, columnspan=3, padx=8, pady=10, sticky="we")
 
 row += 1
-Label(root, textvariable=status_var, wraplength=480, fg="#333").grid(row=row, column=0, columnspan=3, padx=8, pady=4, sticky="w")
+ttk.Label(root, textvariable=status_var, wraplength=480).grid(row=row, column=0, columnspan=3, padx=8, pady=4, sticky="w")
 
 row += 1
 btn_frame = ttk.Frame(root)
 btn_frame.grid(row=row, column=0, columnspan=3, pady=8)
-action_btn = Button(btn_frame, text="Split PDF", command=perform_action, width=15)
+action_btn = ttk.Button(btn_frame, text="Split PDF", command=perform_action, width=15)
 action_btn.grid(row=0, column=0, padx=6)
-Button(btn_frame, text="Clear", command=clear_fields, width=10).grid(row=0, column=1, padx=6)
-Button(btn_frame, text="Exit", command=root.destroy, width=8).grid(row=0, column=2, padx=6)
+ttk.Button(btn_frame, text="Clear", command=clear_fields, width=10).grid(row=0, column=1, padx=6)
+ttk.Button(btn_frame, text="Exit", command=root.destroy, width=8).grid(row=0, column=2, padx=6)
 
 # Make columns resize nicely
 root.grid_columnconfigure(1, weight=1)
