@@ -35,7 +35,7 @@ from merger import PdfMerger
 
 APP_TITLE = "PDF Toolkit"
 
-# GitHub Desktop inspired dark color scheme
+
 GITHUB_BG = "#1f2328"
 GITHUB_HEADER_BG = "#161b22"
 GITHUB_SURFACE = "#2d333b"
