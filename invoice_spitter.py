@@ -1,25 +1,11 @@
 import os
-import traceback
-from tkinter import Tk, Menu, StringVar, filedialog, messagebox
+from tkinter import Tk, Menu, StringVar, filedialog
 from tkinter import ttk
-from typing import List
 
-# External dependency: pypdf
-try:
-    from pypdf import PdfReader, PdfWriter
-except Exception as e:
-    # If pypdf isn't installed, show a helpful message in console and GUI
-    print("Missing dependency 'pypdf'. Install with: pip install pypdf")
-    raise
+from splitter import PdfSplitter
+from merger import PdfMerger
 
 APP_TITLE = "TolisInvoiceSplitter"
-
-
-def human_error(msg: str, details: str = ""):
-    """Show a concise error dialog (and print details to console)."""
-    if details:
-        print(details)
-    messagebox.showerror("Error", msg)
 
 
 def mode() -> str:
@@ -64,7 +50,6 @@ def browse_input():
 
 def browse_output():
     if mode() in ("split", "split_chosen_pages"):
-
         dir_ = filedialog.askdirectory(title="Select output folder")
         if dir_:
             output_var.set(dir_)
@@ -76,241 +61,6 @@ def browse_output():
         )
         if path:
             output_var.set(path)
-
-
-def parse_page_selection(selection: str, total_pages: int) -> List[int]:
-    """Convert a page selection like '1-3,5' into a list of page numbers."""
-    pages: List[int] = []
-    for part in selection.split(","):
-        part = part.strip()
-        if not part:
-            continue
-        if "-" in part:
-            start_s, end_s = part.split("-", 1)
-            try:
-                start = int(start_s)
-                end = int(end_s)
-            except ValueError:
-                raise ValueError(f"Invalid range: {part}")
-            if not (1 <= start <= end <= total_pages):
-                raise ValueError(f"Page range out of bounds: {part}")
-            pages.extend(range(start, end + 1))
-        else:
-            try:
-                page = int(part)
-            except ValueError:
-                raise ValueError(f"Invalid page number: {part}")
-            if not (1 <= page <= total_pages):
-                raise ValueError(f"Page out of bounds: {part}")
-            pages.append(page)
-    return pages
-
-
-def split_pdf():
-    pdf_path = input_var.get().strip()
-    out_dir = output_var.get().strip()
-
-    if not pdf_path:
-        human_error("Please select a PDF file first.")
-        return
-    if not os.path.isfile(pdf_path):
-        human_error("The selected PDF file does not exist.")
-        return
-    if not out_dir:
-        human_error("Please choose an output folder.")
-        return
-
-    try:
-        os.makedirs(out_dir, exist_ok=True)
-    except Exception as e:
-        human_error("Cannot create the output folder.", traceback.format_exc())
-        return
-
-    try:
-        status_var.set("Reading PDF...")
-        root.update_idletasks()
-
-        reader = PdfReader(pdf_path)
-
-        # Handle encrypted PDFs (best-effort empty password)
-        if getattr(reader, "is_encrypted", False):
-            try:
-                ok = reader.decrypt("")
-                if ok == 0:
-                    human_error("This PDF appears to be password-protected. Decryption failed.")
-                    return
-            except Exception:
-                human_error("This PDF appears to be password-protected. Decryption failed.")
-                return
-
-        total_pages = len(reader.pages)
-        if total_pages == 0:
-            human_error("No pages found in the PDF.")
-            return
-
-        base = os.path.splitext(os.path.basename(pdf_path))[0]
-        progress_bar["maximum"] = total_pages
-        progress_bar["value"] = 0
-
-        for idx, page in enumerate(reader.pages, start=1):
-            writer = PdfWriter()
-            writer.add_page(page)
-
-            out_name = f"{base}_p{idx:03d}.pdf"
-            out_path = os.path.join(out_dir, out_name)
-            with open(out_path, "wb") as f:
-                writer.write(f)
-
-            status_var.set(f"Writing page {idx}/{total_pages}...")
-            progress_bar["value"] = idx
-            root.update_idletasks()
-
-        status_var.set(f"Done. Wrote {total_pages} files to:\n{out_dir}")
-        try:
-            # Windows only: open the output folder in Explorer
-            os.startfile(out_dir)  # type: ignore[attr-defined]
-        except Exception:
-            pass
-
-    except Exception as e:
-        human_error("An unexpected error occurred while splitting.", traceback.format_exc())
-        status_var.set("")
-
-
-def split_chosen_pages():
-    pdf_path = input_var.get().strip()
-    out_dir = output_var.get().strip()
-    pages_spec = pages_var.get().strip()
-
-    if not pdf_path:
-        human_error("Please select a PDF file first.")
-        return
-    if not os.path.isfile(pdf_path):
-        human_error("The selected PDF file does not exist.")
-        return
-    if not out_dir:
-        human_error("Please choose an output folder.")
-        return
-    if not pages_spec:
-        human_error("Please specify page selections.")
-        return
-
-    groups = [g.strip() for g in pages_spec.split(";") if g.strip()]
-    if not groups:
-        human_error("Please specify page selections.")
-        return
-
-    try:
-        os.makedirs(out_dir, exist_ok=True)
-    except Exception:
-        human_error("Cannot create the output folder.", traceback.format_exc())
-        return
-
-    try:
-        status_var.set("Reading PDF...")
-        root.update_idletasks()
-
-        reader = PdfReader(pdf_path)
-        if getattr(reader, "is_encrypted", False):
-            try:
-                ok = reader.decrypt("")
-                if ok == 0:
-                    human_error("This PDF appears to be password-protected. Decryption failed.")
-                    return
-            except Exception:
-                human_error("This PDF appears to be password-protected. Decryption failed.")
-                return
-
-        total_pages = len(reader.pages)
-        base = os.path.splitext(os.path.basename(pdf_path))[0]
-        progress_bar["maximum"] = len(groups)
-        progress_bar["value"] = 0
-
-        for idx, group in enumerate(groups, start=1):
-            try:
-                page_numbers = parse_page_selection(group, total_pages)
-            except ValueError as e:
-                human_error(str(e))
-                return
-
-            writer = PdfWriter()
-            for p in page_numbers:
-                writer.add_page(reader.pages[p - 1])
-
-            out_name = f"{base}_sel{idx:02d}.pdf"
-            out_path = os.path.join(out_dir, out_name)
-            with open(out_path, "wb") as f:
-                writer.write(f)
-
-            status_var.set(f"Writing file {idx}/{len(groups)}...")
-            progress_bar["value"] = idx
-            root.update_idletasks()
-
-        status_var.set(f"Done. Wrote {len(groups)} files to:\n{out_dir}")
-        try:
-            os.startfile(out_dir)  # type: ignore[attr-defined]
-        except Exception:
-            pass
-
-    except Exception:
-        human_error("An unexpected error occurred while splitting.", traceback.format_exc())
-        status_var.set("")
-
-
-def merge_pdfs():
-    paths_str = input_var.get().strip()
-    out_path = output_var.get().strip()
-
-    if not paths_str:
-        human_error("Please select PDF files to merge.")
-        return
-    paths = [p.strip() for p in paths_str.split(";") if p.strip()]
-    if not out_path:
-        human_error("Please choose an output file.")
-        return
-
-    try:
-        writer = PdfWriter()
-        progress_bar["maximum"] = len(paths)
-        progress_bar["value"] = 0
-
-        for idx, path in enumerate(paths, start=1):
-            if not os.path.isfile(path):
-                human_error(f"File not found: {path}")
-                return
-
-            reader = PdfReader(path)
-            if getattr(reader, "is_encrypted", False):
-                try:
-                    ok = reader.decrypt("")
-                    if ok == 0:
-                        human_error("One of the PDFs is password-protected. Decryption failed.")
-                        return
-                except Exception:
-                    human_error("One of the PDFs is password-protected. Decryption failed.")
-                    return
-
-            for page in reader.pages:
-                writer.add_page(page)
-
-            status_var.set(f"Processed {idx}/{len(paths)} files...")
-            progress_bar["value"] = idx
-            root.update_idletasks()
-
-        with open(out_path, "wb") as f:
-            writer.write(f)
-
-        status_var.set(f"Done. Wrote merged PDF to:\n{out_path}")
-        try:
-            os.startfile(out_path)  # type: ignore[attr-defined]
-        except Exception:
-            pass
-
-    except Exception as e:
-        human_error("An unexpected error occurred while merging.", traceback.format_exc())
-        status_var.set("")
-
-
 def clear_fields():
     input_var.set("")
     output_var.set("")
@@ -321,11 +71,15 @@ def clear_fields():
 
 def perform_action():
     if mode() == "split":
-        split_pdf()
+        splitter.split(input_var.get().strip(), output_var.get().strip())
     elif mode() == "split_chosen_pages":
-        split_chosen_pages()
+        splitter.split_chosen_pages(
+            input_var.get().strip(),
+            output_var.get().strip(),
+            pages_var.get().strip(),
+        )
     else:
-        merge_pdfs()
+        merger.merge(input_var.get().strip(), output_var.get().strip())
 
 
 def update_ui():
@@ -414,6 +168,22 @@ pages_entry.grid_remove()
 row += 1
 progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=420)
 progress_bar.grid(row=row, column=0, columnspan=3, padx=8, pady=10, sticky="we")
+
+
+def status_update(msg: str) -> None:
+    status_var.set(msg)
+    root.update_idletasks()
+
+
+def progress_update(current: int, total: int) -> None:
+    progress_bar["maximum"] = total
+    progress_bar["value"] = current
+    root.update_idletasks()
+
+
+splitter = PdfSplitter(status_update, progress_update)
+merger = PdfMerger(status_update, progress_update)
+
 
 row += 1
 ttk.Label(root, textvariable=status_var, wraplength=480).grid(row=row, column=0, columnspan=3, padx=8, pady=4, sticky="w")
