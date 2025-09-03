@@ -293,7 +293,6 @@ class SplitChosenTab(_BaseTab):
         clear_btn.grid(row=0, column=1, padx=4)
         self._setup_responsive_buttons(btn_frame, split_btn, clear_btn)
         self.grid_rowconfigure(self.grid_size()[1], weight=1)
-        self.columnconfigure(1, weight=0)
 
     # Callbacks -------------------------------------------------------
     def _browse_input(self) -> None:
