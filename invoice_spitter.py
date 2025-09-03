@@ -2,6 +2,7 @@ import os
 import traceback
 from tkinter import Tk, Menu, StringVar, filedialog, messagebox
 from tkinter import ttk
+from typing import List
 
 # External dependency: pypdf
 try:
@@ -22,12 +23,23 @@ def human_error(msg: str, details: str = ""):
 
 
 def mode() -> str:
-    """Return the current mode in lowercase."""
-    return mode_var.get().lower()
+    """Return the current mode in lowercase with spaces replaced by underscores."""
+    return mode_var.get().lower().replace(" ", "_")
+
+
+def set_mode(new_mode: str):
+    """Set the current mode and refresh the UI."""
+    display_map = {
+        "split": "Split",
+        "merge": "Merge",
+        "split_chosen_pages": "Split chosen pages",
+    }
+    mode_var.set(display_map.get(new_mode.lower(), new_mode))
+    update_ui()
 
 
 def browse_input():
-    if mode() == "split":
+    if mode() in ("split", "split_chosen_pages"):
         path = filedialog.askopenfilename(
             title="Select a PDF",
             filetypes=[("PDF files", "*.pdf")],
@@ -51,7 +63,7 @@ def browse_input():
 
 
 def browse_output():
-    if mode() == "split":
+    if mode() in ("split", "split_chosen_pages"):
 
         dir_ = filedialog.askdirectory(title="Select output folder")
         if dir_:
@@ -64,6 +76,34 @@ def browse_output():
         )
         if path:
             output_var.set(path)
+
+
+def parse_page_selection(selection: str, total_pages: int) -> List[int]:
+    """Convert a page selection like '1-3,5' into a list of page numbers."""
+    pages: List[int] = []
+    for part in selection.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            start_s, end_s = part.split("-", 1)
+            try:
+                start = int(start_s)
+                end = int(end_s)
+            except ValueError:
+                raise ValueError(f"Invalid range: {part}")
+            if not (1 <= start <= end <= total_pages):
+                raise ValueError(f"Page range out of bounds: {part}")
+            pages.extend(range(start, end + 1))
+        else:
+            try:
+                page = int(part)
+            except ValueError:
+                raise ValueError(f"Invalid page number: {part}")
+            if not (1 <= page <= total_pages):
+                raise ValueError(f"Page out of bounds: {part}")
+            pages.append(page)
+    return pages
 
 
 def split_pdf():
@@ -137,6 +177,86 @@ def split_pdf():
         status_var.set("")
 
 
+def split_chosen_pages():
+    pdf_path = input_var.get().strip()
+    out_dir = output_var.get().strip()
+    pages_spec = pages_var.get().strip()
+
+    if not pdf_path:
+        human_error("Please select a PDF file first.")
+        return
+    if not os.path.isfile(pdf_path):
+        human_error("The selected PDF file does not exist.")
+        return
+    if not out_dir:
+        human_error("Please choose an output folder.")
+        return
+    if not pages_spec:
+        human_error("Please specify page selections.")
+        return
+
+    groups = [g.strip() for g in pages_spec.split(";") if g.strip()]
+    if not groups:
+        human_error("Please specify page selections.")
+        return
+
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+    except Exception:
+        human_error("Cannot create the output folder.", traceback.format_exc())
+        return
+
+    try:
+        status_var.set("Reading PDF...")
+        root.update_idletasks()
+
+        reader = PdfReader(pdf_path)
+        if getattr(reader, "is_encrypted", False):
+            try:
+                ok = reader.decrypt("")
+                if ok == 0:
+                    human_error("This PDF appears to be password-protected. Decryption failed.")
+                    return
+            except Exception:
+                human_error("This PDF appears to be password-protected. Decryption failed.")
+                return
+
+        total_pages = len(reader.pages)
+        base = os.path.splitext(os.path.basename(pdf_path))[0]
+        progress_bar["maximum"] = len(groups)
+        progress_bar["value"] = 0
+
+        for idx, group in enumerate(groups, start=1):
+            try:
+                page_numbers = parse_page_selection(group, total_pages)
+            except ValueError as e:
+                human_error(str(e))
+                return
+
+            writer = PdfWriter()
+            for p in page_numbers:
+                writer.add_page(reader.pages[p - 1])
+
+            out_name = f"{base}_sel{idx:02d}.pdf"
+            out_path = os.path.join(out_dir, out_name)
+            with open(out_path, "wb") as f:
+                writer.write(f)
+
+            status_var.set(f"Writing file {idx}/{len(groups)}...")
+            progress_bar["value"] = idx
+            root.update_idletasks()
+
+        status_var.set(f"Done. Wrote {len(groups)} files to:\n{out_dir}")
+        try:
+            os.startfile(out_dir)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    except Exception:
+        human_error("An unexpected error occurred while splitting.", traceback.format_exc())
+        status_var.set("")
+
+
 def merge_pdfs():
     paths_str = input_var.get().strip()
     out_path = output_var.get().strip()
@@ -194,6 +314,7 @@ def merge_pdfs():
 def clear_fields():
     input_var.set("")
     output_var.set("")
+    pages_var.set("")
     progress_bar["value"] = 0
     status_var.set("")
 
@@ -201,6 +322,8 @@ def clear_fields():
 def perform_action():
     if mode() == "split":
         split_pdf()
+    elif mode() == "split_chosen_pages":
+        split_chosen_pages()
     else:
         merge_pdfs()
 
@@ -211,11 +334,22 @@ def update_ui():
         output_label.config(text="Output folder:")
         output_browse_btn.config(text="Choose...")
         action_btn.config(text="Split PDF")
+        pages_label.grid_remove()
+        pages_entry.grid_remove()
+    elif mode() == "split_chosen_pages":
+        input_label.config(text="Input PDF:")
+        output_label.config(text="Output folder:")
+        output_browse_btn.config(text="Choose...")
+        action_btn.config(text="Split pages")
+        pages_label.grid()
+        pages_entry.grid()
     else:
         input_label.config(text="PDFs to merge:")
         output_label.config(text="Output PDF:")
         output_browse_btn.config(text="Save As...")
         action_btn.config(text="Merge PDFs")
+        pages_label.grid_remove()
+        pages_entry.grid_remove()
     clear_fields()
 
 
@@ -233,18 +367,26 @@ mode_var = StringVar(value="Split")
 input_var = StringVar(value="")
 output_var = StringVar(value="")
 status_var = StringVar(value="")
+pages_var = StringVar(value="")
 
 # Menu to switch modes
 menubar = Menu(root)
 mode_menu = Menu(menubar, tearoff=0)
 mode_menu.add_command(label="Split PDF", command=lambda: set_mode("split"))
 mode_menu.add_command(label="Merge PDFs", command=lambda: set_mode("merge"))
+mode_menu.add_command(label="Split chosen pages", command=lambda: set_mode("split_chosen_pages"))
 menubar.add_cascade(label="Mode", menu=mode_menu)
 root.config(menu=menubar)
 
 row = 0
 ttk.Label(root, text="Mode:").grid(row=row, column=0, sticky="w", padx=8, pady=6)
-mode_combo = ttk.Combobox(root, textvariable=mode_var, values=["Split", "Merge"], state="readonly", width=10)
+mode_combo = ttk.Combobox(
+    root,
+    textvariable=mode_var,
+    values=["Split", "Merge", "Split chosen pages"],
+    state="readonly",
+    width=20,
+)
 mode_combo.grid(row=row, column=1, sticky="w", padx=6, pady=6)
 mode_combo.bind("<<ComboboxSelected>>", lambda e: update_ui())
 
@@ -260,6 +402,14 @@ output_label.grid(row=row, column=0, sticky="w", padx=8, pady=6)
 ttk.Entry(root, textvariable=output_var, width=55).grid(row=row, column=1, padx=6, pady=6)
 output_browse_btn = ttk.Button(root, text="Choose...", command=browse_output)
 output_browse_btn.grid(row=row, column=2, padx=6, pady=6)
+
+row += 1
+pages_label = ttk.Label(root, text="Page selections:")
+pages_label.grid(row=row, column=0, sticky="w", padx=8, pady=6)
+pages_entry = ttk.Entry(root, textvariable=pages_var, width=55)
+pages_entry.grid(row=row, column=1, columnspan=2, padx=6, pady=6, sticky="we")
+pages_label.grid_remove()
+pages_entry.grid_remove()
 
 row += 1
 progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=420)
