@@ -35,6 +35,14 @@ from merger import PdfMerger
 
 APP_TITLE = "PDF Toolkit"
 
+# GitHub Desktop inspired dark color scheme
+GITHUB_BG = "#1f2328"
+GITHUB_HEADER_BG = "#161b22"
+GITHUB_SURFACE = "#2d333b"
+GITHUB_TAB_ACTIVE = "#39424a"
+GITHUB_PRIMARY = "#2f81f7"
+GITHUB_FG = "#f0f6fc"
+
 
 class _BaseTab(ttk.Frame):
     """Common functionality shared by the individual notebook tabs."""
@@ -78,9 +86,13 @@ class SplitTab(_BaseTab):
 
         btn_frame = ttk.Frame(self)
         btn_frame.grid(row=2, column=0, columnspan=3, pady=8)
-        ttk.Button(btn_frame, text="Split PDF", command=self._do_split, width=15).grid(
-            row=0, column=0, padx=4
-        )
+        ttk.Button(
+            btn_frame,
+            text="Split PDF",
+            command=self._do_split,
+            width=15,
+            style="Primary.TButton",
+        ).grid(row=0, column=0, padx=4)
         ttk.Button(btn_frame, text="Clear", command=self._clear_common, width=10).grid(
             row=0, column=1, padx=4
         )
@@ -141,7 +153,11 @@ class SplitChosenTab(_BaseTab):
         btn_frame = ttk.Frame(self)
         btn_frame.grid(row=3, column=0, columnspan=3, pady=8)
         ttk.Button(
-            btn_frame, text="Split pages", command=self._do_split, width=15
+            btn_frame,
+            text="Split pages",
+            command=self._do_split,
+            width=15,
+            style="Primary.TButton",
         ).grid(row=0, column=0, padx=4)
         ttk.Button(btn_frame, text="Clear", command=self._clear_all, width=10).grid(
             row=0, column=1, padx=4
@@ -204,9 +220,13 @@ class MergeTab(_BaseTab):
 
         btn_frame = ttk.Frame(self)
         btn_frame.grid(row=2, column=0, columnspan=3, pady=8)
-        ttk.Button(btn_frame, text="Merge PDFs", command=self._do_merge, width=15).grid(
-            row=0, column=0, padx=4
-        )
+        ttk.Button(
+            btn_frame,
+            text="Merge PDFs",
+            command=self._do_merge,
+            width=15,
+            style="Primary.TButton",
+        ).grid(row=0, column=0, padx=4)
         ttk.Button(btn_frame, text="Clear", command=self._clear_common, width=10).grid(
             row=0, column=1, padx=4
         )
@@ -243,20 +263,68 @@ class PdfApp(Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(APP_TITLE)
-        self.minsize(560, 280)
-        self.configure(padx=10, pady=10)
+        self.minsize(560, 300)
+        self.configure(bg=GITHUB_BG)
 
         style = ttk.Style(self)
         if "clam" in style.theme_names():
             style.theme_use("clam")
 
+        # Base widget styling
+        style.configure("TFrame", background=GITHUB_BG)
+        style.configure("TLabel", background=GITHUB_BG, foreground=GITHUB_FG)
+        style.configure(
+            "TButton", background=GITHUB_SURFACE, foreground=GITHUB_FG, padding=6
+        )
+        style.map(
+            "TButton", background=[("active", "#444c56")]
+        )
+        style.configure(
+            "Primary.TButton", background=GITHUB_PRIMARY, foreground="white", padding=6
+        )
+        style.map(
+            "Primary.TButton", background=[("active", "#1b6ac9")]
+        )
+        style.configure("TEntry", fieldbackground=GITHUB_SURFACE, foreground=GITHUB_FG, insertcolor=GITHUB_FG)
+        style.configure("TNotebook", background=GITHUB_BG)
+        style.configure(
+            "TNotebook.Tab",
+            padding=(12, 8),
+            background=GITHUB_SURFACE,
+            foreground=GITHUB_FG,
+        )
+        style.map(
+            "TNotebook.Tab",
+            background=[("selected", GITHUB_TAB_ACTIVE)],
+            padding=[("selected", (12, 8)), ("!selected", (12, 8))],
+        )
+        style.configure("Header.TFrame", background=GITHUB_HEADER_BG)
+        style.configure(
+            "Header.TLabel",
+            background=GITHUB_HEADER_BG,
+            foreground="white",
+            font=("Segoe UI", 12, "bold"),
+        )
+        style.configure(
+            "TProgressbar",
+            background=GITHUB_PRIMARY,
+            troughcolor=GITHUB_SURFACE,
+        )
+
+        # Header bar
+        header = ttk.Frame(self, style="Header.TFrame", height=40)
+        header.grid(row=0, column=0, columnspan=3, sticky="nsew")
+        ttk.Label(header, text=APP_TITLE, style="Header.TLabel").pack(
+            side="left", padx=10, pady=10
+        )
+
         self.status_var = StringVar()
         self.progress = ttk.Progressbar(
             self, orient="horizontal", mode="determinate", length=440
         )
-        self.progress.grid(row=1, column=0, columnspan=3, pady=(8, 2), sticky="we")
+        self.progress.grid(row=2, column=0, columnspan=3, pady=(8, 2), sticky="we")
         ttk.Label(self, textvariable=self.status_var, wraplength=500).grid(
-            row=2, column=0, columnspan=3, sticky="w"
+            row=3, column=0, columnspan=3, sticky="w"
         )
 
         # Set up backend objects with callbacks
@@ -264,13 +332,13 @@ class PdfApp(Tk):
         merger = PdfMerger(self._update_status, self._update_progress)
 
         notebook = ttk.Notebook(self)
-        notebook.grid(row=0, column=0, columnspan=3, sticky="nsew")
+        notebook.grid(row=1, column=0, columnspan=3, sticky="nsew")
         notebook.add(SplitTab(notebook, splitter), text="Split")
         notebook.add(SplitChosenTab(notebook, splitter), text="Split chosen pages")
         notebook.add(MergeTab(notebook, merger), text="Merge")
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
 
     # Backend callbacks -----------------------------------------------
     def _update_status(self, msg: str) -> None:
