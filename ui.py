@@ -162,6 +162,23 @@ class _BaseTab(ttk.Frame):
         self.input_var.set("")
         self.output_var.set("")
 
+    def _setup_responsive_buttons(self, frame: ttk.Frame, primary, secondary) -> None:
+        self._btn_frame = frame
+        self._primary_btn = primary
+        self._secondary_btn = secondary
+        frame.bind("<Configure>", self._on_btn_frame_resize)
+
+    def _on_btn_frame_resize(self, event) -> None:
+        width = event.width
+        for child in self._btn_frame.winfo_children():
+            child.grid_forget()
+        if width < 200:
+            self._primary_btn.grid(row=0, column=0, pady=2, sticky="we")
+            self._secondary_btn.grid(row=1, column=0, pady=2, sticky="we")
+        else:
+            self._primary_btn.grid(row=0, column=0, padx=4)
+            self._secondary_btn.grid(row=0, column=1, padx=4)
+
 
 class SplitTab(_BaseTab):
     """Tab for splitting every page of a PDF into separate files."""
@@ -190,8 +207,8 @@ class SplitTab(_BaseTab):
         )
 
         btn_frame = ttk.Frame(self)
-        btn_frame.grid(row=2, column=0, columnspan=3, pady=8)
-        RoundedButton(
+        btn_frame.grid(row=2, column=0, columnspan=3, pady=8, sticky="ew")
+        split_btn = RoundedButton(
             btn_frame,
             text="Split PDF",
             command=self._do_split,
@@ -199,10 +216,13 @@ class SplitTab(_BaseTab):
             bg=GITHUB_PRIMARY,
             fg="white",
             active_bg="#1b6ac9",
-        ).grid(row=0, column=0, padx=4)
-        RoundedButton(btn_frame, text="Clear", command=self._clear_common, width=10).grid(
-            row=0, column=1, padx=4
         )
+        clear_btn = RoundedButton(
+            btn_frame, text="Clear", command=self._clear_common, width=10
+        )
+        split_btn.grid(row=0, column=0, padx=4)
+        clear_btn.grid(row=0, column=1, padx=4)
+        self._setup_responsive_buttons(btn_frame, split_btn, clear_btn)
 
         self.columnconfigure(1, weight=1)
 
@@ -258,8 +278,8 @@ class SplitChosenTab(_BaseTab):
         )
 
         btn_frame = ttk.Frame(self)
-        btn_frame.grid(row=3, column=0, columnspan=3, pady=8)
-        RoundedButton(
+        btn_frame.grid(row=3, column=0, columnspan=3, pady=8, sticky="ew")
+        split_btn = RoundedButton(
             btn_frame,
             text="Split pages",
             command=self._do_split,
@@ -267,10 +287,11 @@ class SplitChosenTab(_BaseTab):
             bg=GITHUB_PRIMARY,
             fg="white",
             active_bg="#1b6ac9",
-        ).grid(row=0, column=0, padx=4)
-        RoundedButton(btn_frame, text="Clear", command=self._clear_all, width=10).grid(
-            row=0, column=1, padx=4
         )
+        clear_btn = RoundedButton(btn_frame, text="Clear", command=self._clear_all, width=10)
+        split_btn.grid(row=0, column=0, padx=4)
+        clear_btn.grid(row=0, column=1, padx=4)
+        self._setup_responsive_buttons(btn_frame, split_btn, clear_btn)
 
         self.columnconfigure(1, weight=1)
 
@@ -328,8 +349,8 @@ class MergeTab(_BaseTab):
         )
 
         btn_frame = ttk.Frame(self)
-        btn_frame.grid(row=2, column=0, columnspan=3, pady=8)
-        RoundedButton(
+        btn_frame.grid(row=2, column=0, columnspan=3, pady=8, sticky="ew")
+        merge_btn = RoundedButton(
             btn_frame,
             text="Merge PDFs",
             command=self._do_merge,
@@ -337,10 +358,11 @@ class MergeTab(_BaseTab):
             bg=GITHUB_PRIMARY,
             fg="white",
             active_bg="#1b6ac9",
-        ).grid(row=0, column=0, padx=4)
-        RoundedButton(btn_frame, text="Clear", command=self._clear_common, width=10).grid(
-            row=0, column=1, padx=4
         )
+        clear_btn = RoundedButton(btn_frame, text="Clear", command=self._clear_common, width=10)
+        merge_btn.grid(row=0, column=0, padx=4)
+        clear_btn.grid(row=0, column=1, padx=4)
+        self._setup_responsive_buttons(btn_frame, merge_btn, clear_btn)
 
         self.columnconfigure(1, weight=1)
 
